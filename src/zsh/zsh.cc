@@ -101,7 +101,7 @@ struct Zsh
             switch(sort)
             {
             case SortAlgorithm::Rank:
-                return e.rank;
+                return static_cast<i64>(e.rank);
             case SortAlgorithm::Recent:
                 return e.time - now;
             case SortAlgorithm::Frecent:
