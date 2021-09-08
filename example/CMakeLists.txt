@@ -18,3 +18,9 @@ target_link_libraries(sample-prompt
     PUBLIC computer
     PRIVATE project_options project_warnings
 )
+
+add_executable(sample-input input.cc)
+target_link_libraries(sample-input
+    PUBLIC computer
+    PRIVATE project_options project_warnings
+)
