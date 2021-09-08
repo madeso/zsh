@@ -127,7 +127,7 @@ namespace zsh
         {
             for(const auto& r: result.search)
             {
-                if(std::regex_match(path, r) == false)
+                if(std::regex_search(path, r) == false)
                 {
                     return false;
                 }
