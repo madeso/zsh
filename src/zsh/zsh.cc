@@ -13,15 +13,18 @@ namespace zsh
     {
         // add path to entries, or update the existing entry
         {
+            constexpr double initial = 1.0;
+            constexpr double increase = 1.0;
+
             auto found = entries.find(path);
             if(found != entries.end())
             {
-                found->second.rank += 1;
+                found->second.rank += increase;
                 found->second.time = now;
             }
             else
             {
-                entries[path] = {1.0, now};
+                entries[path] = {initial + increase, now};
             }
         }
 
