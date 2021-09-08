@@ -15,7 +15,7 @@ using i64 = std::int64_t;
 struct ZshEntry
 {
     double rank;
-    int time;
+    i64 time;
 };
 
 
@@ -34,9 +34,12 @@ struct Zsh
     std::map<std::string, ZshEntry> entries;
     std::optional<int> max_score; // if null, then always age
 
-    void add(const std::string& path, int now);
+    void add(const std::string& path, i64 now);
 
-    std::vector<Match> get(const std::vector<std::string>& search, int now, SortAlgorithm sort, bool list);
+    std::vector<Match> get(const std::vector<std::string>& search, i64 now, SortAlgorithm sort, bool list);
+
+    std::optional<std::string> get_single(const std::vector<std::string>& search, i64 now, SortAlgorithm sort);
+    std::vector<Match> get_all(const std::vector<std::string>& search, i64 now, SortAlgorithm sort);
 };
 
 }

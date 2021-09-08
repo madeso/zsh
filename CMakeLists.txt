@@ -14,3 +14,4 @@ set_project_warnings(project_warnings)
 enable_sanitizers(project_options)
 
 add_subdirectory(src)
+add_subdirectory(example)

@@ -9,7 +9,7 @@
 
 namespace zsh
 {
-    void Zsh::add(const std::string& path, int now)
+    void Zsh::add(const std::string& path, i64 now)
     {
         // add path to entries, or update the existing entry
         {
@@ -60,7 +60,7 @@ namespace zsh
     }
     
 
-    std::vector<Match> Zsh::get(const std::vector<std::string>& search, int now, SortAlgorithm sort, bool list)
+    std::vector<Match> Zsh::get(const std::vector<std::string>& search, i64 now, SortAlgorithm sort, bool list)
     {
         auto get_rank = [sort, now](const ZshEntry& e) -> i64
         {
@@ -98,7 +98,7 @@ namespace zsh
             std::vector<std::regex> search;
             std::multiset<Match, MatchSort> matches;
 
-            MatchResult(const std::vector<std::string> searches, regex_args args)
+            MatchResult(const std::vector<std::string>& searches, regex_args args)
             {
                 for(const auto& s: searches)
                 {
@@ -173,6 +173,24 @@ namespace zsh
         if(c_match.best) { return compose(c_match); }
         else if(i_match.best) { return compose(i_match); }
         else return {};
+    }
+
+    std::optional<std::string> Zsh::get_single(const std::vector<std::string>& search, i64 now, SortAlgorithm sort)
+    {
+	    auto r = get(search, now, sort, false);
+        if(r.empty())
+        {
+	        return {};
+        }
+        else
+        {
+	        return r[0].path;
+        }
+    }
+
+    std::vector<Match> Zsh::get_all(const std::vector<std::string>& search, i64 now, SortAlgorithm sort)
+    {
+	    return get(search, now, sort, true);
     }
 
 }
