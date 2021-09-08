@@ -43,6 +43,48 @@ struct Console
     {
         std::cerr << msg << std::endl;
     }
+
+    void jump_to(const std::string& path)
+    {
+        cwd = path;
+    }
+
+    void cd_to_relative(const std::string& path)
+    {
+        const auto parts = split(path, '/');
+        for (const auto& part : parts)
+        {
+            if (part == "..")
+            {
+                if (cwd == "~")
+                {
+                    print_error("Cannot go up from root folder");
+                    return;
+                }
+                cwd = cwd.substr(0, cwd.rfind('/'));
+            }
+            else if (part == ".")
+            {
+                continue;
+            }
+            else
+            {
+                cwd += "/" + part;
+            }
+        }
+    }
+
+    void cd_to(const std::string& path)
+    {
+        if (path.find('~') == 0)
+        {
+            jump_to(path);
+        }
+        else
+        {
+            cd_to_relative(path);
+        }
+    }
 };
 
 struct Computer;
@@ -55,49 +97,10 @@ struct Computer
 
     zsh::SortAlgorithm zsh_algorithm = zsh::SortAlgorithm::Frecent;
 
-    void jump_to(const std::string& path)
-    {
-        console.cwd = path;
-        zsh.add(console.cwd, get_unix_timestamp());
-    }
-
-    void cd_to_relative(const std::string& path)
-    {
-        const auto parts = split(path, '/');
-        for (const auto& part : parts)
-        {
-            if (part == "..")
-            {
-                if (console.cwd == "~")
-                {
-                    console.print_error("Cannot go up from root folder");
-                    return;
-                }
-                console.cwd = console.cwd.substr(0, console.cwd.rfind('/'));
-            }
-            else if (part == ".")
-            {
-                continue;
-            }
-            else
-            {
-                console.cwd += "/" + part;
-            }
-        }\
-
-        zsh.add(console.cwd, get_unix_timestamp());
-    }
-
     void cd_to(const std::string& path)
     {
-        if (path.find('/') == 0)
-        {
-            cd_to_relative(path);
-        }
-        else
-        {
-            jump_to(path);
-        }
+        console.cd_to(path);
+        zsh.add(console.cwd, get_unix_timestamp());
     }
     
     std::map<std::string, std::function<void(Computer*, const std::vector<std::string>&)>> commands;
@@ -144,16 +147,24 @@ void handle_zsh(Computer* computer, const std::vector<std::string>& args)
 
 void handle_zsh_list(Computer* computer, const std::vector<std::string>& args)
 {
-    if (args.empty())
+    const auto folders = computer->zsh.get_all(args, get_unix_timestamp(), computer->zsh_algorithm);
+    for (const auto& folder : folders)
     {
-        computer->console.print_error("zsh: missing argument");
+        std::cout << folder.path << ": " << folder.rank << std::endl;
+    }
+}
+
+void handle_dump(Computer* computer, const std::vector<std::string>& args)
+{
+    if (args.empty() == false)
+    {
+        computer->console.print_error("dump takes 0 arguments");
     }
     else
     {
-        const auto folders = computer->zsh.get_all(args, get_unix_timestamp(), computer->zsh_algorithm);
-        for (const auto& folder : folders)
+        for(const auto& e: computer->zsh.entries)
         {
-            std::cout << folder.path << ": " << folder.rank << std::endl;
+            std::cout << e.first << ": " << e.second.time << " / " << e.second.rank << std::endl;
         }
     }
 }
@@ -176,8 +187,9 @@ int main(int, char **)
     computer.commands["cd"] = handle_cd;
     computer.commands["z"] = handle_zsh;
     computer.commands["zsh"] = handle_zsh_list;
+    computer.commands["dump"] = handle_dump;
 
-    while(true)
+    while(computer.on)
     {
         std::string line;
 
