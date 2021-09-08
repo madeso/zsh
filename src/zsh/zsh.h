@@ -4,9 +4,6 @@
 #include <cstdint>
 #include <vector>
 
-// z.sh "port"
-// original https://github.com/rupa/z
-
 namespace zsh
 {
 
