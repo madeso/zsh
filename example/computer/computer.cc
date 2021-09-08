@@ -36,7 +36,7 @@ namespace computer
 
     void Console::print_error(const std::string& msg) const
     {
-        std::cerr << "ERROR: " << msg << std::endl;
+        std::cerr << "ERROR: " << msg << "\n" << std::endl;
     }
 
     void Console::jump_to(const std::string& path)
@@ -125,6 +125,21 @@ namespace computer
         }
     }
 
+    void handle_help(Computer* computer, const std::vector<std::string>& args)
+    {
+        if (args.empty() == false)
+        {
+            computer->console.print_error("help takes 0 arguments");
+        }
+
+        std::cout << "Available commands:\n";
+        for (const auto& command : computer->commands)
+        {
+            std::cout << "  " << command.first << "\n";
+        }
+        std::cout << std::endl;
+    }
+
     std::vector<std::string> drop_first(const std::vector<std::string>& args)
     {
         if (args.empty())
@@ -140,6 +155,7 @@ namespace computer
         computer->add("exit", handle_exit);
         computer->add("all", handle_zsh_list);
         computer->add("dump", handle_dump);
+        computer->add("help", handle_help);
     }
 
 
