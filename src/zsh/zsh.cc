@@ -1,48 +1,15 @@
-#include <string>
-#include <map>
+#include "zsh/zsh.h"
+
 #include <numeric>
-#include <optional>
 #include <cassert>
 #include <regex>
-#include <cstdint>
 #include <set>
-#include <vector>
 
-// z.sh "port"
-// original https://github.com/rupa/z
+#include "zsh/cpp20.h"
 
-using i64 = std::int64_t;
-
-struct ZshEntry
+namespace zsh
 {
-    double rank;
-    int time;
-};
-
-// replace with std function in 20
-// https://en.cppreference.com/w/cpp/container/map/erase_if
-template< class Key, class T, class Compare, class Alloc, class Pred >
-typename std::map<Key,T,Compare,Alloc>::size_type erase_if(std::map<Key,T,Compare,Alloc>& c, Pred pred)
-{
-    auto old_size = c.size();
-    for (auto i = c.begin(), last = c.end(); i != last; ) {
-        if (pred(*i)) {
-            i = c.erase(i);
-        } else {
-            ++i;
-        }
-    }
-    return old_size - c.size();
-}
-
-enum class SortAlgorithm { Rank, Recent, Frecent };
-
-struct Zsh
-{
-    std::map<std::string, ZshEntry> entries;
-    std::optional<int> max_score; // if null, then always age
-
-    void add(const std::string& path, int now)
+    void Zsh::add(const std::string& path, int now)
     {
         // add path to entries, or update the existing entry
         {
@@ -91,10 +58,9 @@ struct Zsh
             }
         }
     }
+    
 
-    struct Match {std::string path; i64 rank;};
-
-    std::vector<Match> get(const std::vector<std::string>& search, int now, SortAlgorithm sort, bool list)
+    std::vector<Match> Zsh::get(const std::vector<std::string>& search, int now, SortAlgorithm sort, bool list)
     {
         auto get_rank = [sort, now](const ZshEntry& e) -> i64
         {
@@ -209,4 +175,4 @@ struct Zsh
         else return {};
     }
 
-};
+}

@@ -1,5 +1,6 @@
 set(src
-    zsh/zsh.cc
+    zsh/zsh.cc zsh/zsh.h
+    zsh/cpp20.cc zsh/cpp20.h
 )
 
 add_library(zsh STATIC ${src})
