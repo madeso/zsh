@@ -33,10 +33,10 @@ namespace computer
     struct Computer
     {
         bool on = true;
-        zsh::SortAlgorithm zsh_algorithm = zsh::SortAlgorithm::Frecent;
+        zsh::sort_algorithm zsh_algorithm = zsh::sort_algorithm::frecent;
 
         Console console;
-        zsh::Zsh zsh;
+        zsh::zsh zsh;
         std::map<std::string, CommandHandler> commands;
 
         void cd_to(const std::string& path);

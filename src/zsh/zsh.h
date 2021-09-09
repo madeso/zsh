@@ -11,34 +11,34 @@ namespace zsh
 
 using i64 = std::int64_t;
 
-struct Entry
+struct entry
 {
     double rank;
     i64 time;
 };
 
 
-enum class SortAlgorithm { Rank, Recent, Frecent };
+enum class sort_algorithm { rank, recent, frecent };
 
 
-struct Match
+struct match
 {
     std::string path;
     i64 rank;
 };
 
 
-struct Zsh
+struct zsh
 {
-    std::map<std::string, Entry> entries;
+    std::map<std::string, entry> entries;
     std::optional<int> max_score; // if null, then always age
 
     void add(const std::string& path, i64 now);
 
-    std::vector<Match> get(const std::vector<std::string>& search, i64 now, SortAlgorithm sort, bool list);
+    std::vector<match> get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list);
 
-    std::optional<std::string> get_single(const std::vector<std::string>& search, i64 now, SortAlgorithm sort);
-    std::vector<Match> get_all(const std::vector<std::string>& search, i64 now, SortAlgorithm sort);
+    std::optional<std::string> get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort);
+    std::vector<match> get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort);
 };
 
 }

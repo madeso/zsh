@@ -9,7 +9,7 @@
 
 namespace zsh
 {
-    void Zsh::add(const std::string& path, i64 now)
+    void zsh::add(const std::string& path, i64 now)
     {
         // add path to entries, or update the existing entry
         {
@@ -63,17 +63,17 @@ namespace zsh
     }
     
 
-    std::vector<Match> Zsh::get(const std::vector<std::string>& search, i64 now, SortAlgorithm sort, bool list)
+    std::vector<match> zsh::get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
     {
-        auto get_rank = [sort, now](const Entry& e) -> i64
+        auto get_rank = [sort, now](const entry& e) -> i64
         {
             switch(sort)
             {
-            case SortAlgorithm::Rank:
+            case sort_algorithm::rank:
                 return static_cast<i64>(e.rank);
-            case SortAlgorithm::Recent:
+            case sort_algorithm::recent:
                 return e.time - now;
-            case SortAlgorithm::Frecent:
+            case sort_algorithm::frecent:
                 {
                     // relate frequency and time
                     const auto dx = now - e.time;
@@ -87,7 +87,7 @@ namespace zsh
 
         struct MatchSort
         {
-            bool operator()(const Match& lhs, const Match& rhs) const
+            bool operator()(const match& lhs, const match& rhs) const
             {
                 return lhs.rank < rhs.rank;
             }
@@ -95,13 +95,13 @@ namespace zsh
 
         // should be std::syntax_option_type
         using regex_args = decltype(std::regex::icase);
-        struct MatchResult
+        struct match_result
         {
-            std::optional<Match> best;
+            std::optional<match> best;
             std::vector<std::regex> search;
-            std::multiset<Match, MatchSort> matches;
+            std::multiset<match, MatchSort> matches;
 
-            MatchResult(const std::vector<std::string>& searches, regex_args args)
+            match_result(const std::vector<std::string>& searches, regex_args args)
             {
                 for(const auto& s: searches)
                 {
@@ -110,11 +110,11 @@ namespace zsh
             }
         };
 
-        auto update = [list](MatchResult* results, const std::string& path, i64 rank)
+        auto update = [list](match_result* results, const std::string& path, i64 rank)
         {
             if(list)
             {
-                results->matches.emplace(Match{path, rank});
+                results->matches.emplace(match{path, rank});
             }
 
             if(results->best.has_value() == false || rank > results->best->rank)
@@ -123,7 +123,7 @@ namespace zsh
             }
         };
 
-        auto match = [](const MatchResult& result, const std::string& path)
+        auto match = [](const match_result& result, const std::string& path)
         {
             for(const auto& r: result.search)
             {
@@ -136,7 +136,7 @@ namespace zsh
             return true;
         };
 
-        auto update_and_match = [update, match](MatchResult* results, const std::string& path, i64 rank)
+        auto update_and_match = [update, match](match_result* results, const std::string& path, i64 rank)
         {
             if(match(*results, path))
             {
@@ -149,8 +149,8 @@ namespace zsh
 
         constexpr auto regex_engine = std::regex::ECMAScript;
         
-        auto c_match = MatchResult{search, regex_engine};
-        auto i_match = MatchResult{search, regex_engine | std::regex::icase};
+        auto c_match = match_result{search, regex_engine};
+        auto i_match = match_result{search, regex_engine | std::regex::icase};
 
         for(const auto& e: entries)
         {
@@ -160,11 +160,11 @@ namespace zsh
             }
         }
 
-        auto compose = [list](const MatchResult& m) -> std::vector<Match>
+        auto compose = [list](const match_result& m) -> std::vector<::zsh::match>
         {
             if(list)
             {
-                return std::vector<Match>(m.matches.begin(), m.matches.end());
+                return std::vector<::zsh::match>(m.matches.begin(), m.matches.end());
             }
             else
             {
@@ -178,7 +178,7 @@ namespace zsh
         else return {};
     }
 
-    std::optional<std::string> Zsh::get_single(const std::vector<std::string>& search, i64 now, SortAlgorithm sort)
+    std::optional<std::string> zsh::get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
     {
 	    auto r = get(search, now, sort, false);
         if(r.empty())
@@ -191,7 +191,7 @@ namespace zsh
         }
     }
 
-    std::vector<Match> Zsh::get_all(const std::vector<std::string>& search, i64 now, SortAlgorithm sort)
+    std::vector<match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
     {
 	    return get(search, now, sort, true);
     }
