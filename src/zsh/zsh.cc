@@ -61,11 +61,10 @@ namespace zsh
             }
         }
     }
-    
 
-    std::vector<match> zsh::get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
+    namespace
     {
-        auto get_rank = [sort, now](const entry& e) -> i64
+	    i64 get_rank(const entry& e, i64 now, sort_algorithm sort)
         {
             switch(sort)
             {
@@ -83,17 +82,17 @@ namespace zsh
                 assert(false && "unhandled case");
                 return 0;
             }
-        };
+        }
 
         struct MatchSort
-        {
-            bool operator()(const match& lhs, const match& rhs) const
-            {
-                return lhs.rank < rhs.rank;
-            }
-        };
+	    {
+	        bool operator()(const match& lhs, const match& rhs) const
+	        {
+	            return lhs.rank < rhs.rank;
+	        }
+	    };
 
-        // should be std::syntax_option_type
+    // should be std::syntax_option_type
         using regex_args = decltype(std::regex::icase);
         struct match_result
         {
@@ -110,7 +109,7 @@ namespace zsh
             }
         };
 
-        auto update = [list](match_result* results, const std::string& path, i64 rank)
+        void update(match_result* results, const std::string& path, i64 rank, bool list)
         {
             if(list)
             {
@@ -121,9 +120,9 @@ namespace zsh
             {
                 results->best = {path, rank};
             }
-        };
+        }
 
-        auto match = [](const match_result& result, const std::string& path)
+        bool match(const match_result& result, const std::string& path)
         {
             for(const auto& r: result.search)
             {
@@ -134,19 +133,22 @@ namespace zsh
             }
 
             return true;
-        };
+        }
 
-        auto update_and_match = [update, match](match_result* results, const std::string& path, i64 rank)
+        bool update_and_match(match_result* results, const std::string& path, i64 rank, bool list)
         {
             if(match(*results, path))
             {
-                update(results, path, rank);
+                update(results, path, rank, list);
                 return true;
             }
 
             return false;
         };
+    }
 
+    std::vector<::zsh::match> zsh::get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
+    {
         constexpr auto regex_engine = std::regex::ECMAScript;
         
         auto c_match = match_result{search, regex_engine};
@@ -154,9 +156,9 @@ namespace zsh
 
         for(const auto& e: entries)
         {
-            if( update_and_match(&c_match, e.first, get_rank(e.second)) == false)
+            if( update_and_match(&c_match, e.first, get_rank(e.second, now, sort), list) == false)
             {
-                update_and_match(&i_match, e.first, get_rank(e.second));
+                update_and_match(&i_match, e.first, get_rank(e.second, now, sort), list);
             }
         }
 
@@ -164,7 +166,7 @@ namespace zsh
         {
             if(list)
             {
-                return std::vector<::zsh::match>(m.matches.begin(), m.matches.end());
+                return std::vector(m.matches.begin(), m.matches.end());
             }
             else
             {
@@ -191,7 +193,7 @@ namespace zsh
         }
     }
 
-    std::vector<match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
+    std::vector<::zsh::match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
     {
 	    return get(search, now, sort, true);
     }
