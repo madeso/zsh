@@ -146,57 +146,46 @@ namespace zsh
 	            return false;
 	        }
         };
-    }
 
-    std::vector<match> zsh::get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
-    {
-        constexpr auto regex_engine = std::regex::ECMAScript;
-        
-        auto c_match = match_result{search, regex_engine};
-        auto i_match = match_result{search, regex_engine | std::regex::icase};
-
-        for(const auto& e: entries)
+        std::optional<match_result> find_best_match(const zsh& z, const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
         {
-            if( c_match.update_and_match(e.first, get_rank(e.second, now, sort), list) == false)
+            constexpr regex_args regex_engine = std::regex::ECMAScript;
+
+            auto case_logic        = match_result{search, regex_engine};
+			auto ignore_case_logic = match_result{search, regex_engine | std::regex::icase};
+            
+            for(const auto& e: z.entries)
             {
-                i_match.update_and_match(e.first, get_rank(e.second, now, sort), list);
+	            if( case_logic.update_and_match(e.first, get_rank(e.second, now, sort), list) == false)
+	            {
+	                case_logic.update_and_match(e.first, get_rank(e.second, now, sort), list);
+	            }
             }
-        }
 
-        auto compose = [list](const match_result& m) -> std::vector<::zsh::match>
-        {
-            if(list)
-            {
-                return std::vector(m.matches.begin(), m.matches.end());
-            }
-            else
-            {
-                if(m.best) { return {*m.best}; }
-                else return {};
-            }
-        };
-
-        if(c_match.best) { return compose(c_match); }
-        else if(i_match.best) { return compose(i_match); }
-        else return {};
-    }
-
-    std::optional<std::string> zsh::get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
-    {
-	    auto r = get(search, now, sort, false);
-        if(r.empty())
-        {
-	        return {};
-        }
-        else
-        {
-	        return r[0].path;
+            if(case_logic.best) { return std::move(case_logic); }
+            if(ignore_case_logic.best) { return std::move(ignore_case_logic); }
+            return {};
         }
     }
 
-    std::vector<match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
+    std::optional<std::string> zsh::get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort) const
     {
-	    return get(search, now, sort, true);
+	    if(const auto r = find_best_match(*this, search, now, sort, false); r.has_value())
+        {
+            return r->best->path;
+        }
+
+	    return {};
+    }
+
+    std::vector<match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort) const
+    {
+	    if(const auto r = find_best_match(*this, search, now, sort, true); r.has_value())
+        {
+            return std::vector(r->matches.begin(), r->matches.end());
+        }
+
+	    return {};
     }
 
 }

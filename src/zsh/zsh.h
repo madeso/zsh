@@ -35,10 +35,8 @@ struct zsh
 
     void add(const std::string& path, i64 now);
 
-    std::vector<match> get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list);
-
-    std::optional<std::string> get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort);
-    std::vector<match> get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort);
+    std::optional<std::string> get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort) const;
+    std::vector<match> get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort) const;
 };
 
 }
