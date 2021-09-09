@@ -95,36 +95,27 @@ namespace zsh
 		// should be std::syntax_option_type
         using regex_args = decltype(std::regex::icase);
 
+        template<typename TBest>
         struct match_result
         {
-            std::optional<match> best;
-            std::vector<std::regex> search;
-            std::multiset<match, match_sort> matches;
+            std::vector<std::regex> regexes;
 
             match_result(const std::vector<std::string>& searches, regex_args args)
             {
                 for(const auto& s: searches)
                 {
-                    search.emplace_back(s, args);
+                    regexes.emplace_back(s, args);
                 }
             }
 
-            void update(const std::string& path, i64 rank, bool list)
+            void update(const std::string& path, i64 rank)
 	        {
-	            if(list)
-	            {
-	                matches.emplace(::zsh::match{path, rank});
-	            }
-
-	            if(best.has_value() == false || rank > best->rank)
-	            {
-	                best = {path, rank};
-	            }
+                static_cast<TBest*>(this)->update(path, rank);
 	        }
 
-	        bool match(const std::string& path)
+	        bool search(const std::string& path)
 	        {
-	            for(const auto& r: search)
+	            for(const auto& r: regexes)
 	            {
 	                if(std::regex_search(path, r) == false)
 	                {
@@ -135,11 +126,11 @@ namespace zsh
 	            return true;
 	        }
 
-	        bool update_and_match(const std::string& path, i64 rank, bool list)
+	        bool update_and_match(const std::string& path, i64 rank)
 	        {
-	            if(match(path))
+	            if(search(path))
 	            {
-	                update(path, rank, list);
+	                update(path, rank);
 	                return true;
 	            }
 
@@ -147,30 +138,74 @@ namespace zsh
 	        }
         };
 
-        std::optional<match_result> find_best_match(const zsh& z, const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
+        struct match_result_single : match_result<match_result_single>
+        {
+            std::optional<match> best;
+
+            match_result_single(const std::vector<std::string>& searches, regex_args args)
+	            : match_result(searches, args)
+            {
+            }
+
+            void update(const std::string& path, i64 rank)
+	        {
+	            if(best.has_value() == false || rank > best->rank)
+	            {
+	                best = {path, rank};
+	            }
+	        }
+
+            [[nodiscard]] bool has_value() const
+            {
+	            return best.has_value();
+            }
+        };
+
+        struct match_result_all : match_result<match_result_all>
+        {
+            std::multiset<match, match_sort> matches;
+
+            match_result_all(const std::vector<std::string>& searches, regex_args args)
+	            : match_result(searches, args)
+            {
+            }
+
+            void update(const std::string& path, i64 rank)
+	        {
+	            matches.emplace(match{path, rank});
+	        }
+
+            [[nodiscard]] bool has_value() const
+            {
+                return matches.empty() == false;
+            }
+        };
+
+        template<typename TBest>
+        std::optional<TBest> find_best_match(const zsh& z, const std::vector<std::string>& search, i64 now, sort_algorithm sort)
         {
             constexpr regex_args regex_engine = std::regex::ECMAScript;
 
-            auto case_logic        = match_result{search, regex_engine};
-			auto ignore_case_logic = match_result{search, regex_engine | std::regex::icase};
+            auto case_logic        = TBest{search, regex_engine};
+			auto ignore_case_logic = TBest{search, regex_engine | std::regex::icase};
             
             for(const auto& e: z.entries)
             {
-	            if( case_logic.update_and_match(e.first, get_rank(e.second, now, sort), list) == false)
+	            if( case_logic.update_and_match(e.first, get_rank(e.second, now, sort)) == false)
 	            {
-	                case_logic.update_and_match(e.first, get_rank(e.second, now, sort), list);
+	                case_logic.update_and_match(e.first, get_rank(e.second, now, sort));
 	            }
             }
 
-            if(case_logic.best) { return std::move(case_logic); }
-            if(ignore_case_logic.best) { return std::move(ignore_case_logic); }
+            if(case_logic.has_value()) { return std::move(case_logic); }
+            if(ignore_case_logic.has_value()) { return std::move(ignore_case_logic); }
             return {};
         }
     }
 
     std::optional<std::string> zsh::get_single(const std::vector<std::string>& search, i64 now, sort_algorithm sort) const
     {
-	    if(const auto r = find_best_match(*this, search, now, sort, false); r.has_value())
+	    if(const auto r = find_best_match<match_result_single>(*this, search, now, sort); r.has_value())
         {
             return r->best->path;
         }
@@ -180,7 +215,7 @@ namespace zsh
 
     std::vector<match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort) const
     {
-	    if(const auto r = find_best_match(*this, search, now, sort, true); r.has_value())
+	    if(const auto r = find_best_match<match_result_all>(*this, search, now, sort); r.has_value())
         {
             return std::vector(r->matches.begin(), r->matches.end());
         }
