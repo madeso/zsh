@@ -65,7 +65,7 @@ namespace zsh
 
     std::vector<Match> Zsh::get(const std::vector<std::string>& search, i64 now, SortAlgorithm sort, bool list)
     {
-        auto get_rank = [sort, now](const ZshEntry& e) -> i64
+        auto get_rank = [sort, now](const Entry& e) -> i64
         {
             switch(sort)
             {

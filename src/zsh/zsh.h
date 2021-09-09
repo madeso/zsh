@@ -9,7 +9,7 @@ namespace zsh
 
 using i64 = std::int64_t;
 
-struct ZshEntry
+struct Entry
 {
     double rank;
     i64 time;
@@ -28,7 +28,7 @@ struct Match
 
 struct Zsh
 {
-    std::map<std::string, ZshEntry> entries;
+    std::map<std::string, Entry> entries;
     std::optional<int> max_score; // if null, then always age
 
     void add(const std::string& path, i64 now);
