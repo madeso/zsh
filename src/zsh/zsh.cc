@@ -84,7 +84,7 @@ namespace zsh
             }
         }
 
-        struct MatchSort
+        struct match_sort
 	    {
 	        bool operator()(const match& lhs, const match& rhs) const
 	        {
@@ -92,13 +92,14 @@ namespace zsh
 	        }
 	    };
 
-    // should be std::syntax_option_type
+		// should be std::syntax_option_type
         using regex_args = decltype(std::regex::icase);
+
         struct match_result
         {
             std::optional<match> best;
             std::vector<std::regex> search;
-            std::multiset<match, MatchSort> matches;
+            std::multiset<match, match_sort> matches;
 
             match_result(const std::vector<std::string>& searches, regex_args args)
             {
@@ -107,47 +108,47 @@ namespace zsh
                     search.emplace_back(s, args);
                 }
             }
-        };
 
-        void update(match_result* results, const std::string& path, i64 rank, bool list)
-        {
-            if(list)
-            {
-                results->matches.emplace(match{path, rank});
-            }
+            void update(const std::string& path, i64 rank, bool list)
+	        {
+	            if(list)
+	            {
+	                matches.emplace(::zsh::match{path, rank});
+	            }
 
-            if(results->best.has_value() == false || rank > results->best->rank)
-            {
-                results->best = {path, rank};
-            }
-        }
+	            if(best.has_value() == false || rank > best->rank)
+	            {
+	                best = {path, rank};
+	            }
+	        }
 
-        bool match(const match_result& result, const std::string& path)
-        {
-            for(const auto& r: result.search)
-            {
-                if(std::regex_search(path, r) == false)
-                {
-                    return false;
-                }
-            }
+	        bool match(const std::string& path)
+	        {
+	            for(const auto& r: search)
+	            {
+	                if(std::regex_search(path, r) == false)
+	                {
+	                    return false;
+	                }
+	            }
 
-            return true;
-        }
+	            return true;
+	        }
 
-        bool update_and_match(match_result* results, const std::string& path, i64 rank, bool list)
-        {
-            if(match(*results, path))
-            {
-                update(results, path, rank, list);
-                return true;
-            }
+	        bool update_and_match(const std::string& path, i64 rank, bool list)
+	        {
+	            if(match(path))
+	            {
+	                update(path, rank, list);
+	                return true;
+	            }
 
-            return false;
+	            return false;
+	        }
         };
     }
 
-    std::vector<::zsh::match> zsh::get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
+    std::vector<match> zsh::get(const std::vector<std::string>& search, i64 now, sort_algorithm sort, bool list)
     {
         constexpr auto regex_engine = std::regex::ECMAScript;
         
@@ -156,9 +157,9 @@ namespace zsh
 
         for(const auto& e: entries)
         {
-            if( update_and_match(&c_match, e.first, get_rank(e.second, now, sort), list) == false)
+            if( c_match.update_and_match(e.first, get_rank(e.second, now, sort), list) == false)
             {
-                update_and_match(&i_match, e.first, get_rank(e.second, now, sort), list);
+                i_match.update_and_match(e.first, get_rank(e.second, now, sort), list);
             }
         }
 
@@ -193,7 +194,7 @@ namespace zsh
         }
     }
 
-    std::vector<::zsh::match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
+    std::vector<match> zsh::get_all(const std::vector<std::string>& search, i64 now, sort_algorithm sort)
     {
 	    return get(search, now, sort, true);
     }
